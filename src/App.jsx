@@ -1,4 +1,7 @@
 import { PostList } from './components/PostList.jsx'
+import { CreatePost } from './components/CreatePost.jsx'
+import { PostFilter } from './components/PostFilter.jsx'
+import { PostSorting } from './components/PostSorting.jsx'
 const posts = [
   {
     title: 'Full-Stack React Projects',
@@ -8,5 +11,17 @@ const posts = [
   { title: 'Hello React!', contents: 'New article', author: 'S. Hood' },
 ]
 export function App() {
-  return <PostList posts={posts} />
+  return (
+    <div style={{ padding: 8 }}>
+      <CreatePost />
+      <br />
+      <br />
+      Filter by:
+      <PostFilter field='author' />
+      <br />
+      <PostSorting fields={['createdAt', 'updatedAt']} />
+      <hr />
+      <PostList posts={posts} />
+    </div>
+  )
 }
