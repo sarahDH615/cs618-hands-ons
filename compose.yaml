@@ -1,4 +1,3 @@
-version: '3.9'
 services:
   blog-database:
     image: mongo
