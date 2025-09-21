@@ -1,5 +1,5 @@
 import mongoose from 'mongoose'
-import { describe, expect, test, beforeEach } from '@jest/globals'
+import { describe, expect, test, beforeEach, beforeAll } from '@jest/globals'
 import { Post } from '../db/models/post.js'
 import {
   createPost,
@@ -11,17 +11,24 @@ import {
   deletePost,
 } from '../services/posts.js'
 
+import { createUser } from '../services/users.js'
+
+let samplePosts = [] // 'let' so it can be changed
+let testUser = null
+beforeAll(async () => {
+  testUser = await createUser({ username: 'sample', password: 'user' }) // no const/var/let because global
+  samplePosts = [
+    { title: 'Learning Redux', author: testUser._id, tags: ['redux'] },
+    { title: 'Learn React Hooks', author: testUser._id, tags: ['react'] },
+    {
+      title: 'Full-Stack React Projects',
+      author: testUser._id,
+      tags: ['react', 'nodejs'],
+    },
+  ]
+})
+
 // creating sample data
-const samplePosts = [
-  { title: 'Learning Redux', author: 'Daniel Bugl', tags: ['redux'] },
-  { title: 'Learn React Hooks', author: 'Daniel Bugl', tags: ['react'] },
-  {
-    title: 'Full-Stack React Projects',
-    author: 'Daniel Bugl',
-    tags: ['react', 'nodejs'],
-  },
-  { title: 'Guide to TypeScript' },
-]
 
 let createdSamplePosts = []
 
@@ -45,11 +52,10 @@ describe('creating posts', () => {
   test('with all parameters should succeed', async () => {
     const post = {
       title: 'Hello Mongoose!',
-      author: 'Daniel Bugl',
       contents: 'This post is stored in a MongoDB database using Mongoose.',
       tags: ['mongoose', 'mongodb'],
     }
-    const createdPost = await createPost(post)
+    const createdPost = await createPost(testUser._id, post)
     // expect createdPost's id to be an instance of a mongoose object id
     expect(createdPost._id).toBeInstanceOf(mongoose.Types.ObjectId)
 
@@ -65,12 +71,11 @@ describe('creating posts', () => {
   // test 2: posts should have a title
   test('without title should fail', async () => {
     const post = {
-      author: 'Daniel Bugl',
       contents: 'Post with no title.',
       tags: ['empty'],
     }
     try {
-      await createPost(post)
+      await createPost(testUser._id, post)
     } catch (err) {
       expect(err).toBeInstanceOf(mongoose.Error.ValidationError)
       expect(err.message).toContain('`title` is required')
@@ -81,7 +86,7 @@ describe('creating posts', () => {
     const post = {
       title: 'Title only post',
     }
-    const createdPost = await createPost(post)
+    const createdPost = await createPost(testUser._id, post)
     expect(createdPost._id).toBeInstanceOf(mongoose.Types.ObjectId)
   })
 })
@@ -118,7 +123,7 @@ describe('listing posts', () => {
   })
   // test 4: filter by author
   test('should be able to filter posts by author', async () => {
-    const posts = await listPostsByAuthor('Daniel Bugl')
+    const posts = await listPostsByAuthor(testUser.username)
     expect(posts.length).toBe(3)
   })
   // test 5: filter by tags
@@ -142,22 +147,22 @@ describe('getting a post', () => {
 // UPDATE
 describe('updating posts', () => {
   test('should update the specified property', async () => {
-    await updatePost(createdSamplePosts[0]._id, {
-      author: 'Test Author',
+    await updatePost(testUser._id, createdSamplePosts[0]._id, {
+      contents: 'New contents for post',
     })
     const updatedPost = await Post.findById(createdSamplePosts[0]._id)
-    expect(updatedPost.author).toEqual('Test Author')
+    expect(updatedPost.contents).toEqual('New contents for post')
   })
   test('should not update other properties', async () => {
-    await updatePost(createdSamplePosts[0]._id, {
-      author: 'Test Author',
+    await updatePost(testUser._id, createdSamplePosts[0]._id, {
+      contents: 'New contents for post',
     })
     const updatedPost = await Post.findById(createdSamplePosts[0]._id)
     expect(updatedPost.title).toEqual('Learning Redux')
   })
   test('should update the updatedAt timestamp', async () => {
-    await updatePost(createdSamplePosts[0]._id, {
-      author: 'Test Author',
+    await updatePost(testUser._id, createdSamplePosts[0]._id, {
+      contents: 'New contents for post',
     })
     const updatedPost = await Post.findById(createdSamplePosts[0]._id)
     // check against the sample post in the array
@@ -166,8 +171,8 @@ describe('updating posts', () => {
     )
   })
   test('should fail if the id does not exist', async () => {
-    const post = await updatePost('000000000000000000000000', {
-      author: 'Test Author',
+    const post = await updatePost(testUser._id, '000000000000000000000000', {
+      contents: 'New contents for post',
     })
     expect(post).toEqual(null)
   })
@@ -175,7 +180,7 @@ describe('updating posts', () => {
 describe('deleting posts', () => {
   // delete a post that exists
   test('should remove the post from the database', async () => {
-    const result = await deletePost(createdSamplePosts[0]._id)
+    const result = await deletePost(testUser._id, createdSamplePosts[0]._id)
     expect(result.deletedCount).toEqual(1)
     const deletedPost = await Post.findById(createdSamplePosts[0]._id)
     expect(deletedPost).toEqual(null)
