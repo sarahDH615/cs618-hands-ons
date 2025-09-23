@@ -8,9 +8,14 @@ export function Signup() {
   const [password, setPassword] = useState('')
   const navigate = useNavigate()
 
+  // const signupMutation = useMutation({
+  //   mutationFn: () => signup({ username, password }),
+  //   onSuccess: () => navigate('/login'), // make them log in with their newly set up account
+  //   onError: () => alert('failed to sign up!'),
+  // })
   const signupMutation = useMutation({
     mutationFn: () => signup({ username, password }),
-    onSuccess: () => navigate('/login'), // make them log in with their newly set up account
+    onSuccess: () => navigate('/login'),
     onError: () => alert('failed to sign up!'),
   })
 
