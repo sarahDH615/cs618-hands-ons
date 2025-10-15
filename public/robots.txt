@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://upgraded-goldfish-vw95jg7vvq5cwrwv-5173.app.github.dev/sitemap.xml
