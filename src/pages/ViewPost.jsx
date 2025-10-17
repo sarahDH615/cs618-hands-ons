@@ -1,11 +1,14 @@
 import { Link } from 'react-router-dom'
 import PropTypes from 'prop-types'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation } from '@tanstack/react-query'
 import { Header } from '../components/Header.jsx'
 import { Post } from '../components/Post.jsx'
 import { getPostById } from '../api/posts.js'
 import { Helmet } from 'react-helmet-async'
 import { getUserInfo } from '../api/users.js'
+import { useEffect, useState } from 'react'
+import { postTrackEvent } from '../api/events.js'
+import { PostStats } from '../components/PostStats.jsx'
 
 function truncate(str, max = 160) {
   if (!str) return str
@@ -17,6 +20,44 @@ function truncate(str, max = 160) {
 }
 
 export function ViewPost({ postId }) {
+  const [session, setSession] = useState()
+
+  const trackEventMutation = useMutation({
+    mutationFn: (action) => postTrackEvent({ postId, action, session }),
+    onSuccess: (data) => setSession(data?.session),
+  })
+
+  /*
+  useEffect(setup, dependencies?)
+  see https://react.dev/reference/react/useEffect#useeffect
+  logic:
+    mount: setup function runs when component is added to the dom
+    on designated re-renders (see below): 
+      cleanup function runs using old values on page re-render,
+      THEN runs setup function with new values
+    unmount: cleanup function runs when component is removed from the dom
+    IF dependencies are specified in an array, if any of them change (with a page re-render?),
+      (cleanup &) setup function(s) run(s) again
+    IF an empty array is passed as dependencies, the (cleanup &) setup  function(s)
+      do(es) not re-run on re-render
+    IF no dependencies are passed at all, the (cleanup &) setup function(s) re-run(s) on every re-render
+  */
+  useEffect(() => {
+    // -- SETUP FUNCTION
+    // set 1 second wait, after which the mutation function will run
+    let timeout = setTimeout(() => {
+      trackEventMutation.mutate('startView')
+      timeout = null
+    }, 1000)
+    // --
+    // CLEANUP FUNCTION : ie, when user leaves the page
+    return () => {
+      if (timeout) clearTimeout(timeout)
+      else trackEventMutation.mutate('endView')
+    }
+    // --
+  }, []) // array of no dependencies, so it only runs on page load and close
+
   // query to get post with the specified id
   const postQuery = useQuery({
     queryKey: ['post', postId],
@@ -54,7 +95,15 @@ export function ViewPost({ postId }) {
       <Link to='/'>Back to main page</Link>
       <br />
       <hr />
-      {post ? <Post {...post} fullPost /> : `Post with id ${postId} not found.`}
+      {post ? (
+        <div>
+          <Post {...post} fullPost />
+          <hr />
+          <PostStats postId={postId} />
+        </div>
+      ) : (
+        `Post with id ${postId} not found.`
+      )}
     </div>
   )
 }
