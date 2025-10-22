@@ -1,0 +1,4 @@
+{
+    "$schema": "https://upgraded-goldfish-vw95jg7vvq5cwrwv-3001.app.github.dev/graphql",
+    "documents": "src/api/graphql/**/*.{js, jsx}"
+}

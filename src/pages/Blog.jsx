@@ -2,24 +2,22 @@ import { PostList } from '../components/PostList.jsx'
 import { CreatePost } from '../components/CreatePost.jsx'
 import { PostFilter } from '../components/PostFilter.jsx'
 import { PostSorting } from '../components/PostSorting.jsx'
-import { useQuery } from '@tanstack/react-query'
-import { getPosts } from '../api/posts.js'
 import { useState } from 'react'
 import { Header } from '../components/Header.jsx'
 import { Helmet } from 'react-helmet-async'
+import { useQuery as useGraphQLQuery } from '@apollo/client/react/index.js'
+import { GET_POSTS, GET_POSTS_BY_AUTHOR } from '../api/graphql/posts.js'
 
 export function Blog() {
   const [author, setAuthor] = useState('') // default: ''
   const [sortBy, setSortBy] = useState('createdAt')
   const [sortOrder, setSortOrder] = useState('descending')
 
-  // create query to call the backend and read an endpoint
-  const postsQuery = useQuery({
-    queryKey: ['posts', { author, sortBy, sortOrder }], // the endpoint it reads and the params it passes to it
-    queryFn: () => getPosts({ author, sortBy, sortOrder }), // the function it calls to read the endpoint
+  const postsQuery = useGraphQLQuery(author ? GET_POSTS_BY_AUTHOR : GET_POSTS, {
+    variables: { author, options: { sortBy, sortOrder } },
   })
+  const posts = postsQuery.data?.postsByAuthor ?? postsQuery.data?.posts ?? []
 
-  const posts = postsQuery.data ?? [] // get data from the query
   return (
     <div style={{ padding: 8 }}>
       <Helmet>
